@@ -293,3 +293,249 @@ and therefore inArray() will continue to work:
 myarray.indexOf = null;
 
 console.log(myarray.inArray([1, 10, 5, 6, 7], 5)); //2
+
+/*-- Module Patter --*/
+
+//First step is setting up a namespace
+//let use the function we created earlier
+
+MYAPP.namespace('MYAPP.utilities.array');
+
+//next is defining the modules
+MYAPP.utilities.array = (function () {
+  return {
+    // todo...
+  };
+}());
+
+//Next, add some methods to the public interface
+
+MYAPP.utilities.array = (function () {
+  return {
+    inArray: function (needle, heystack) {
+      // ...
+    },
+    isArray: function (a) {
+      // ...
+    }
+  };
+}());
+
+/*-- Sandbox Pattern --*/
+
+/*
+The sandbox pattern addresses the drawbacks of
+the namespacing pattern, namely:
+ - Reliance on a single global variable to be the application’s global.
+ - Long, dotted names to type and resolve at runtime,
+ for example, MYAPP.utilities.array.
+*/
+
+/*
+In the namespacing pattern you have one global object;
+in the sandbox pattern the single global is a constructor:
+let’s call it Sandbox()
+*/
+
+//sanbox constructor
+
+function Sandbox() {
+  // turning arguments into an array
+  var args = Array.prototype.slice.call(arguments),
+      // the last argument is the callback
+      callback = args.pop(),
+      // modules can be passed as an array or individual parameters
+      modules = (args[0] && typeof args[0] === "string") ? args : args[0],
+      i;
+
+  // make sure the function is called as a constructor
+  if (!(this instanceof Sandbox)) {
+    return new Sanbox(modules, callback);
+  }
+
+  // add properties to `this` as needed:
+  this.a = 1;
+  this.b = 4;
+
+  // now add modules to the core `this` object
+  // no modules or "*" both mean "use all modules"
+  if (!modules || modules === "*") {
+    modules = [];
+    for (i in Sandbox.modules) {
+      if (Sandbox.modules.hasOwnProperty(i)) {
+        modules.push(i);
+      }
+    }
+  }
+
+  // initialize the required modules
+  for (i = 0; i < modules.length; i += 1) {
+    Sandbox.modules[modules[i]](this);
+  }
+
+  // call the callback
+  callback(this);
+}
+
+//Any prototype properties as needed
+Sandbox.prototype = {
+  name: "My Application",
+  version: "1.0",
+  getName: function () {
+    return this.name;
+  }
+}
+
+//Adding modules
+
+Sandbox.modules = {};
+
+Sandbox.modules.dom = function (box) {
+  box.getElement = function () {};
+  box.getStyle = function () {};
+  box.foo = "bar";
+}
+
+Sandbox.modules.event = function (box) {
+  box.attachEvent = function () {};
+  box.dettachEvent = function () {};
+}
+
+/*-- Static Members --*/
+
+/*-- Public Static Members --*/
+
+//example
+
+// constructor
+var GadgetY = function () {};
+
+// a static method
+GadgetY.isShiny = function () {
+  return "you bet";
+}
+
+// a normal method added to the prototype
+GadgetY.prototype.setPrice = function (price) {
+  this.price = price;
+}
+
+// calling a static method --> does not need an instance
+
+GadgetY.isShiny(); // "you bet"
+
+// creating an instance and calling a method
+var iphone = new GadgetY();
+iphone.setPrice(500);
+
+/*
+Attempting to call an instance method statically won’t work;
+same for calling a static method using the instance iphone object:
+*/
+
+typeof GadgetY.setPrice; // "undefined"
+typeof iphone.isShiny;  // "undefined"
+
+/*
+Sometimes it could be convenient to have the static methods
+working with an instance too. This is easy to achieve by simply
+adding a new method to the prototype, which serves as a façade
+pointing to the original static method:
+*/
+
+GadgetY.prototype.isShiny = GadgetY.isShiny;
+iphone.isShiny(); // "you bet"
+
+/*
+In such cases you need to be careful if you use this inside
+the static method. When you do Gadget.isShiny() then this
+inside isShiny() will refer to the Gadget constructor function.
+If you do iphone.isShiny() then this will point to iphone.
+*/
+
+/*-- Private Static Members --*/
+
+/*
+  - Shared by all the objects created with the same constructor function
+  - Not accessible outside the constructor
+*/
+
+var GadgetZ = (function () {
+  // static variable/property
+  var counter = 0;
+
+  // returning the new implementation
+  // of the constructor
+  return function () {
+    console.log(counter += 1);
+  };
+}()); // execute immediately
+
+/* The new Gadget constructor simply increments and logs
+the private counter.
+*/
+
+var g1 = new GadgetZ(); //logs 1
+var g2 = new GadgetZ(); //logs 2
+var g3 = new GadgetZ(); //logs 3
+
+/*
+Because we’re incrementing the counter with one for every object,
+this static property becomes an ID that uniquely identifies each
+object created with the Gadget constructor.
+*/
+
+// constructor
+var GadgetA = (function () {
+  // static variable/property
+  var counter = 0,
+      NewGadget;
+
+  // this will be the new
+  // constructor implementation
+  NewGadget = function () {
+    counter += 1;
+  }
+
+  // a privileged method
+  NewGadget.prototype.getLastId = function () {
+    return counter;
+  }
+
+  // overwrite the constructor
+  return NewGadget;
+}()); // execute immediately
+
+var iphone1 = new GadgetA();
+console.log(iphone1.getLastId()); // 1
+var ipod = new GadgetA();
+console.log(ipod.getLastId()); // 2
+var ipad = new GadgetA();
+console.log(ipad.getLastId()); // 3
+
+
+/*-- Chaining Pattern --*/
+/*
+The chaining pattern enables you to call methods on an
+object one after the other, without assigning the return
+values of the previous operations to variables and without
+having to split your calls on multiple lines.
+*/
+
+var obj_ = {
+  value: 1,
+  increment: function () {
+    this.value += 1;
+    return this;
+  },
+  add: function (v) {
+    this.value += v;
+    return this;
+  },
+  shout: function () {
+    console.log(this.value);
+  }
+}
+
+// chain method calls
+obj_.increment().add(3).shout(); // 5
