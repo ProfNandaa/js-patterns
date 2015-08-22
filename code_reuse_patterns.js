@@ -186,3 +186,169 @@ function inherit(C, P) {
 	C.uber = P.prototype;
 	C.prototype.constructor = C;
 }
+
+// Addition to ES5 - Object.create()
+
+var parent = new Parent();
+
+var child = Object.create(parent);
+
+var child = Object.create(parent, {
+	age: { value: 2} // ES5 descriptor
+});
+
+child.hasOwnProperty("age"); // true
+
+// Inheritance by Copying Properties
+
+function extend(parent, child) {
+	var i;
+	child = child || {};
+	for (i in parent) {
+		if (parent.hasOwnProperty(i)) {
+			child[i] = parent[i];
+		}
+		return child;
+	}
+}
+
+/*
+let’s modify the extend() function to make deep copies. 
+All you need is to check if a property’s type is an object, 
+and if so, recursively copy its properties.
+*/
+
+function extendDeep(parent, child) {
+	var i,
+			toStr = Object.prototype.toString,
+			astr = "[object Array]";
+
+	child = child || {};
+
+	for (i in parent) {
+		if (parent.hasOwnProperty(i)) {
+			if (typeof parent[i] === "object") {
+				child[i] = (toStr.call(parent[i]) === astr) ? [] : {};
+				extendDeep(parent[i], child[i]);
+			} else {
+				child[i] = parent[i];
+			}
+		}
+	}
+	return child;
+}
+
+// Mixins
+
+/*
+Instead of copying from one object, you can copy from 
+any number of objects and mix them all into a new object.
+
+The implementation is simple; just loop through arguments 
+and copy every property of every object passed to the function:
+*/
+
+function mix() {
+	var arg, prop, child = {};
+	for (arg = 0; arg < arguments.length; arg += 1) {
+		for (prop in arguments[arg]) {
+			if (arguments[arg].hasOwnProperty(prop)) {
+				child[prop] = arguments[arg][prop];
+			}
+		}
+	}
+	return child;
+}
+
+var cake = mix(
+	{eggs: 2, large: true},
+	{butter: 1, salted: true},
+	{flour: "3 cups"},
+	{sugar: "sure!"}
+);
+
+console.log(cake);
+
+// Borrowing methods
+
+/*
+You want to use just the methods you like, without 
+inheriting all the other methods that you’ll never need.
+
+Use call() or apply()
+*/
+
+// Example: Borrow from Array
+
+function f() {
+	var args = [].slice.call(arguments, 1, 3);
+	return args;
+}
+
+console.log(f(1, 2, 3, 4, 5, 6)); // returns [2, 3]
+
+// Borrow and Bind
+
+var one = {
+	name: "object",
+	say: function (greet) {
+		return greet + ", " + this.name;
+	}
+}
+
+var two = {
+	name: "another object"
+};
+
+one.say.apply(two, ['hello']); // "hello, another object"
+
+var say = one.say;
+say('hoho'); // "hoho, undefined"
+
+// passing as a callback
+var yetanother = {
+	name: "Yet another object",
+	method: function (callback) {
+		return callback('Holla');
+	}
+};
+
+yetanother.method(one.say); // Holla, undefined
+
+/*
+In both of the above cases this inside say() was 
+pointing to the global object, and the whole
+snippet didn’t work as expected To bind an object to a method,
+we can use a simple function like this:
+*/
+
+function bind(o, m) {
+	return function () {
+		return m.apply(o, [].slice.call(arguments));
+	}
+}
+
+/*
+This bind() function accepts an object o and a method m , 
+binds the two together, and then returns another function. 
+The returned function has access to o and m via a closure.
+*/
+
+var twosay = bind(two, one.say);
+twosay('yo'); // "yo, yet another object"
+
+/*
+As you can see, even though twosay() was created as a global 
+function, this didn’t point to the global object, but it 
+pointed to object two , which was passed to bind().
+*/
+
+// Function.prototype.bind()
+
+/*
+ES5 adds a method bind() to Function.prototype , making it 
+just as easy to use as apply() and call(). 
+So you can do expressions like:
+*/
+
+var newFunc = obj.someFunc.bind(myobj, 1, 2, 3);
