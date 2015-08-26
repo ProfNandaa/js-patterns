@@ -82,5 +82,66 @@ function Universe() {
 	return instance;
 }
 
+/*-- Factory --*/
 
+// Example:
 
+// parent constructor
+function CarMaker() {}
+
+// a method of the parent
+CarMaker.prototype.drive = function () {
+	return "Vroom, I have " + this.doors + " doors";
+}
+
+// the static factory method
+CarMaker.factory = function (type) {
+	var constr = type,
+			newcar;
+
+	// error if the constructor doesn't exist
+	if (typeof CarMaker[constr] !== "function") {
+		throw {
+			name: "Error",
+			message: constr + " doesn't exist"
+		};
+	}
+
+	// at this point, the constructor is known to exist
+	// let's have it inherit the parent but only once
+	if (typeof CarMaker[constr].prototype.drive !== "function") {
+		CarMaker[constr].prototype = new CarMaker();
+	}
+
+	// create a new instance
+	newcar = new CarMaker[constr]();
+
+	// optionally, call some methods then return...
+	return newcar;
+};
+
+// define specific car makers
+CarMaker.Compact = function () {
+	this.doors = 4;
+}
+
+CarMaker.Convertible = function () {
+	this.doors = 2;
+}
+
+CarMaker.SUV = function () {
+	this.doors = 24;
+}
+
+// Object implements the factory pattern
+
+var o = new Object(),
+		n = new Object(1),
+		s = Object('1'),
+		b = Object(true);
+
+// test
+o.constructor === Object; // true
+n.constructor === Number; // true
+s.constructor === String; // true
+b.constructor === Boolean; // true
