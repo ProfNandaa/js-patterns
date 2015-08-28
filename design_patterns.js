@@ -288,3 +288,26 @@ SaleX.prototype.getPrice = function () {
 
 	return price;
 }
+
+/*-- Facade --*/
+/*
+So instead of duplicating the two method calls all over 
+the application, you can create a façade method that calls
+both of them.
+*/
+
+var myevent = {
+	// ...
+	stop: function (e) {
+		e.preventDefault();
+		e.stopPropagation();
+	}
+	// ...
+}
+
+/*-- Proxy --*/
+/*
+One object acts as an interface to another object.
+*/
+
+
